@@ -1,6 +1,6 @@
 # PHP-FPM 5.5 Docker
 
-<small>**Latest build:** 2017-04-14</small>
+<small>**Latest build:** 2017-04-15</small>
 
 [![Build Status](https://travis-ci.org/cytopia/docker-php-fpm-5.5.svg?branch=master)](https://travis-ci.org/cytopia/docker-php-fpm-5.5) [![](https://images.microbadger.com/badges/version/cytopia/php-fpm-5.5.svg)](https://microbadger.com/images/cytopia/php-fpm-5.5 "php-fpm-5.5") [![](https://images.microbadger.com/badges/image/cytopia/php-fpm-5.5.svg)](https://microbadger.com/images/cytopia/php-fpm-5.5 "php-fpm-5.5") [![](https://images.microbadger.com/badges/license/cytopia/php-fpm-5.5.svg)](https://microbadger.com/images/cytopia/php-fpm-5.5 "php-fpm-5.5")
 
