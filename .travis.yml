@@ -5,60 +5,184 @@ sudo: required
 
 
 ###
-### Attach services
+### Language
+###
+language: python
+
+
+###
+### Add services
 ###
 services:
   - docker
 
 
 ###
-### Global variables
+### Build Matrix definition
 ###
 env:
+  global:
+    - IMAGE: devilbox/php-fpm-5.5
+    # travis encrypt DOCKER_USERNAME=user
+    # travis encrypt DOCKER_PASSWORD=pass
+    # Must be regenerated when repository name/owner changes
+    # DOCKER_USERNAME
+    - secure: "Pxqf7aCJwH7eMRysXbbkKemFnt3KVdOrzAwydiR371v077LAm9B1GHazEAfl1aka7tJtoqACVp5112gB2nxEbcx/5Ol2G6KZuvfLkUxmmIn7ISxX5jUfKS1RIkN3oi21e64DnrCLekXAJEP9/V5FxPrUQgDBDss8Gx5OF8xykz5AFN+ptODrllVB+Utzv6KzHA0f0lpWPd9BowQc9pBWUXVSn4JaodGQEXmsILVhh/K1+YMvWowhzjaHN/yOG3rlp/IbfMQXsvKms+cPJSpo0uUWsVNn192N3fC731nDdspiDMLoLisL3owz6Lh985Crn09V+/TwSxmdpob02Iv2PS5wIYZ1+9RSC4oGaOZNiPtOByAcIXPc0jnaQcCfe+ROiwPCvIqW6WUvW7k1ka9vbxQQG8dIjM7oz5s2iGGdRWUrvgX3GKsgGZFNtOpOXyTdrmUF2Ts67zwHOFUCrcZpwfeXX2bPHu9wW69qNzU93nGBuC0oafOsA/KNFV020LiyOKNiACoRX6YRrteO9+iPaYnrEqmPc2uayBh7YHeGjaX5aXNyyHIrhAldbc1m4lA9aJlcD5FqhvY1nl7WHm4680Tjqj3zNm67nqnuhkom38GFOGqCeVPlCOvkCIyDmXaAlV/twXr5sZFiiyjyuk0lV77A5MFtUWz0NMwF1fkkhmo="
+    # DOCKER_PASSWORD
+    - secure: "H4lnKUIV9z6VuwqH7UeXhnToXuSeqLGsFjo/FmPfQunJV18wzVtF+C61erLBcLaxphnfUbRHyBJ7GgJK3lz3grLBvYsgZQ8Wq6hAj7csxmlbJIv1WgGjJIzQzmcwCXva6xJOSGGVOH7KYYprnEwASYLw3lwB27Ud/0Y5O4Ajwmhd1j+Pj7O+Zq3mnRkStfyHZb11eaEyRbmWX5Ll2E6cGou6GMvQDimhO4U5XCeD0YT+eYnpXb3Kg72QBpE+hA0tLCEZEcy2I9auC3/8KuK9sTAcTy3tUTuxcVEWwsUv1HvOWpLiIHsJZ13oupxVKhWLStdTndlgSxV4F655uBRkpdD63QSqw8UU3kc6lOAWx8BAo47xA73SW866X7SX5/qoT1eWxO2N1S0ZVPaxOgdGfegoQv4dteb6FZ2nuul9OBsXxe9bnM2oG3yAv+/xd2XE6YNGhTA/Y4t8KyMBsRWBmLbYDbpjLutxtEZwEXzPyNnkKQtYp2487JcIFNx//ACpB2A1fqX7iiArAy6V21IbhIfqMdpFJNWGSdhCZBqiuedP/Nv27CQPQPjfn6I7JPyC7VkXK2+mBjSFwpkx8p8RfvOLsE5cGeZXTESYWfZCW+iQecIesxZXs2/XBsZM9Se2kqNKa638voPocdEzaRA3NLpM/sS6tl3k4fUC9R+ns+M="
   matrix:
-    - DEBUG=0
-    - DEBUG=1
-    - DEBUG=2
+    - FLAVOUR=alpine TYPE=base
+    - FLAVOUR=alpine TYPE=mods
+    - FLAVOUR=alpine TYPE=prod
+    - FLAVOUR=alpine TYPE=work
+    - FLAVOUR=debian TYPE=base
+    - FLAVOUR=debian TYPE=mods
+    - FLAVOUR=debian TYPE=prod
+    - FLAVOUR=debian TYPE=work
 
 
 ###
-### Show information
+### Stage definitions
 ###
-before_install:
+stages:
+  - test
+  - deploy
+
+
+###
+### Global for all stages
+###
+install:
   # Get newer docker version
   - max=100; i=0; while [ $i -lt $max ]; do if sudo apt-get update; then break; else i=$((i+1)); fi done
   - max=100; i=0; while [ $i -lt $max ]; do if sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce; then break; else i=$((i+1)); fi done
-  # Get newer docker-compose version
-  - max=100; i=0; while [ $i -lt $max ]; do if curl -L --retry 100 --retry-max-time 0 https://github.com/docker/compose/releases/download/1.13.0/docker-compose-`uname -s`-`uname -m` > docker-compose; then break; else i=$((i+1)); fi done
-  - chmod +x docker-compose
-  - sudo mv -f docker-compose /usr/local/bin
-  # List versions
   - docker version
-  - docker-compose version
-
-
-###
-### Disable any provided services
-###
-before_script:
-  # Disable services enabled by default
-  # http://docs.travis-ci.com/user/database-setup/#MySQL
-  - sudo /etc/init.d/mysql      stop || true
-  - sudo /etc/init.d/postgresql stop || true
-  - sudo /etc/init.d/memcached  stop || true
-  - sudo /etc/init.d/redis      stop || true
-  - sudo /etc/init.d/mongodb    stop || true
-
-  - sudo service mysql      stop || true
-  - sudo service postgresql stop || true
-  - sudo service memcached  stop || true
-  - sudo service redis      stop || true
-  - sudo service mongodb    stop || true
-  - netstat -tulpn
-
-
-###
-### Test
-###
 script:
-  - build/docker-validate.sh "${DEBUG}"
+  - .ci/start-ci.sh "${IMAGE}" "${FLAVOUR}" "${TYPE}"
+
+
+###
+### Job definitions
+###
+jobs:
+  include:
+    - stage: deploy
+      env:
+        - FLAVOUR=debian TYPE=
+      before_script:
+        - if [ "${TRAVIS_PULL_REQUEST}" == "false" ]; then
+            if [ -n "${TRAVIS_TAG}" ] || [ "${TRAVIS_BRANCH}" == "master" ] || [[ ${TRAVIS_BRANCH} =~ ^(release-[.0-9]+)$ ]]; then
+              max=100; i=0; while [ $i -lt $max ]; do if
+                docker build -t "${IMAGE}:base-${FLAVOUR}" -f base/Dockerfile.${FLAVOUR} base/ &&
+                docker build -t "${IMAGE}:mods-${FLAVOUR}" -f mods/Dockerfile.${FLAVOUR} mods/ &&
+                docker build -t "${IMAGE}:prod-${FLAVOUR}" -f prod/Dockerfile.${FLAVOUR} prod/ &&
+                docker build -t "${IMAGE}:work-${FLAVOUR}" -f work/Dockerfile.${FLAVOUR} work/ &&
+                docker images; then break; else i=$((i+1)); fi
+              done;
+              if [ $i -gt 98 ]; then false; fi
+            else
+              echo "Skipping branch ${TRAVIS_BRANCH}";
+            fi
+          fi
+      script:
+        # Push to docker hub on success
+        - if [ "${TRAVIS_PULL_REQUEST}" == "false" ]; then
+            if [ -n "${TRAVIS_TAG}" ]; then
+              max=100; i=0; while [ $i -lt $max ]; do if
+                docker tag "${IMAGE}:base-${FLAVOUR}" "${IMAGE}:base-${FLAVOUR}-${TRAVIS_TAG}" &&
+                docker tag "${IMAGE}:mods-${FLAVOUR}" "${IMAGE}:mods-${FLAVOUR}-${TRAVIS_TAG}" &&
+                docker tag "${IMAGE}:prod-${FLAVOUR}" "${IMAGE}:prod-${FLAVOUR}-${TRAVIS_TAG}" &&
+                docker tag "${IMAGE}:work-${FLAVOUR}" "${IMAGE}:work-${FLAVOUR}-${TRAVIS_TAG}" &&
+                docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD" &&
+                docker push "${IMAGE}:work-${FLAVOUR}-${TRAVIS_TAG}" &&
+                docker push "${IMAGE}:prod-${FLAVOUR}-${TRAVIS_TAG}" &&
+                docker push "${IMAGE}:mods-${FLAVOUR}-${TRAVIS_TAG}" &&
+                docker push "${IMAGE}:base-${FLAVOUR}-${TRAVIS_TAG}"; then break; else i=$((i+1)); fi
+              done;
+              if [ $i -gt 98 ]; then false; fi
+            elif [ "${TRAVIS_BRANCH}" == "master" ]; then
+              max=100; i=0; while [ $i -lt $max ]; do if
+                docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD" &&
+                docker push "${IMAGE}:work-${FLAVOUR}" &&
+                docker push "${IMAGE}:prod-${FLAVOUR}" &&
+                docker push "${IMAGE}:mods-${FLAVOUR}" &&
+                docker push "${IMAGE}:base-${FLAVOUR}"; then break; else i=$((i+1)); fi
+              done;
+              if [ $i -gt 98 ]; then false; fi
+            elif [[ ${TRAVIS_BRANCH} =~ ^(release-[.0-9]+)$ ]]; then
+              max=100; i=0; while [ $i -lt $max ]; do if
+                docker tag "${IMAGE}:base-${FLAVOUR}" "${IMAGE}:base-${FLAVOUR}-${TRAVIS_BRANCH}" &&
+                docker tag "${IMAGE}:mods-${FLAVOUR}" "${IMAGE}:mods-${FLAVOUR}-${TRAVIS_BRANCH}" &&
+                docker tag "${IMAGE}:prod-${FLAVOUR}" "${IMAGE}:prod-${FLAVOUR}-${TRAVIS_BRANCH}" &&
+                docker tag "${IMAGE}:work-${FLAVOUR}" "${IMAGE}:work-${FLAVOUR}-${TRAVIS_BRANCH}" &&
+                docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD" &&
+                docker push "${IMAGE}:work-${FLAVOUR}-${TRAVIS_BRANCH}" &&
+                docker push "${IMAGE}:prod-${FLAVOUR}-${TRAVIS_BRANCH}" &&
+                docker push "${IMAGE}:mods-${FLAVOUR}-${TRAVIS_BRANCH}" &&
+                docker push "${IMAGE}:base-${FLAVOUR}-${TRAVIS_BRANCH}"; then break; else i=$((i+1)); fi
+              done;
+              if [ $i -gt 98 ]; then false; fi
+            else
+              echo "Skipping branch ${TRAVIS_BRANCH}";
+            fi
+          fi
+    - stage: deploy
+      env:
+        - FLAVOUR=alpine TYPE=
+      before_script:
+        - if [ "${TRAVIS_PULL_REQUEST}" == "false" ]; then
+            if [ -n "${TRAVIS_TAG}" ] || [ "${TRAVIS_BRANCH}" == "master" ] || [[ ${TRAVIS_BRANCH} =~ ^(release-[.0-9]+)$ ]]; then
+              max=100; i=0; while [ $i -lt $max ]; do if
+                docker build -t "${IMAGE}:base-${FLAVOUR}" -f base/Dockerfile.${FLAVOUR} base/ &&
+                docker build -t "${IMAGE}:mods-${FLAVOUR}" -f mods/Dockerfile.${FLAVOUR} mods/ &&
+                docker build -t "${IMAGE}:prod-${FLAVOUR}" -f prod/Dockerfile.${FLAVOUR} prod/ &&
+                docker build -t "${IMAGE}:work-${FLAVOUR}" -f work/Dockerfile.${FLAVOUR} work/ &&
+                docker images; then break; else i=$((i+1)); fi
+              done;
+              if [ $i -gt 98 ]; then false; fi
+            else
+              echo "Skipping branch ${TRAVIS_BRANCH}";
+            fi
+          fi
+      script:
+        # Push to docker hub on success
+        - if [ "${TRAVIS_PULL_REQUEST}" == "false" ]; then
+            if [ -n "${TRAVIS_TAG}" ]; then
+              max=100; i=0; while [ $i -lt $max ]; do if
+                docker tag "${IMAGE}:base-${FLAVOUR}" "${IMAGE}:base-${FLAVOUR}-${TRAVIS_TAG}" &&
+                docker tag "${IMAGE}:mods-${FLAVOUR}" "${IMAGE}:mods-${FLAVOUR}-${TRAVIS_TAG}" &&
+                docker tag "${IMAGE}:prod-${FLAVOUR}" "${IMAGE}:prod-${FLAVOUR}-${TRAVIS_TAG}" &&
+                docker tag "${IMAGE}:work-${FLAVOUR}" "${IMAGE}:work-${FLAVOUR}-${TRAVIS_TAG}" &&
+                docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD" &&
+                docker push "${IMAGE}:work-${FLAVOUR}-${TRAVIS_TAG}" &&
+                docker push "${IMAGE}:prod-${FLAVOUR}-${TRAVIS_TAG}" &&
+                docker push "${IMAGE}:mods-${FLAVOUR}-${TRAVIS_TAG}" &&
+                docker push "${IMAGE}:base-${FLAVOUR}-${TRAVIS_TAG}"; then break; else i=$((i+1)); fi
+              done;
+              if [ $i -gt 98 ]; then false; fi
+            elif [ "${TRAVIS_BRANCH}" == "master" ]; then
+              max=100; i=0; while [ $i -lt $max ]; do if
+                docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD" &&
+                docker push "${IMAGE}:work-${FLAVOUR}" &&
+                docker push "${IMAGE}:prod-${FLAVOUR}" &&
+                docker push "${IMAGE}:mods-${FLAVOUR}" &&
+                docker push "${IMAGE}:base-${FLAVOUR}"; then break; else i=$((i+1)); fi
+              done;
+              if [ $i -gt 98 ]; then false; fi
+            elif [[ ${TRAVIS_BRANCH} =~ ^(release-[.0-9]+)$ ]]; then
+              max=100; i=0; while [ $i -lt $max ]; do if
+                docker tag "${IMAGE}:base-${FLAVOUR}" "${IMAGE}:base-${FLAVOUR}-${TRAVIS_BRANCH}" &&
+                docker tag "${IMAGE}:mods-${FLAVOUR}" "${IMAGE}:mods-${FLAVOUR}-${TRAVIS_BRANCH}" &&
+                docker tag "${IMAGE}:prod-${FLAVOUR}" "${IMAGE}:prod-${FLAVOUR}-${TRAVIS_BRANCH}" &&
+                docker tag "${IMAGE}:work-${FLAVOUR}" "${IMAGE}:work-${FLAVOUR}-${TRAVIS_BRANCH}" &&
+                docker login --username "$DOCKER_USERNAME" --password "$DOCKER_PASSWORD" &&
+                docker push "${IMAGE}:work-${FLAVOUR}-${TRAVIS_BRANCH}" &&
+                docker push "${IMAGE}:prod-${FLAVOUR}-${TRAVIS_BRANCH}" &&
+                docker push "${IMAGE}:mods-${FLAVOUR}-${TRAVIS_BRANCH}" &&
+                docker push "${IMAGE}:base-${FLAVOUR}-${TRAVIS_BRANCH}"; then break; else i=$((i+1)); fi
+              done;
+              if [ $i -gt 98 ]; then false; fi
+            else
+              echo "Skipping branch ${TRAVIS_BRANCH}";
+            fi
+          fi
